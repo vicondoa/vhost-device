@@ -1,0 +1,58 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*-nixling.*"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions: {}
+    env:
+      GITHUB_TOKEN: ""
+      ACTIONS_RUNTIME_TOKEN: ""
+      CARGO_INCREMENTAL: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "release-${{ runner.os }}"
+          save-if: ${{ github.ref_type == 'tag' }}
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libasound2-dev libpipewire-0.3-dev
+      - name: Build vhost-device-sound (release)
+        run: cargo build --release --locked --package vhost-device-sound --no-default-features --features alsa-backend,pw-backend
+      - name: Package binary
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+          mkdir -p release
+          tar czf "release/vhost-device-sound-${VERSION}-x86_64-linux.tar.gz" \
+            -C target/release vhost-device-sound
+          cd release && sha256sum *.tar.gz > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-binaries
+          path: release/
+
+  release:
+    needs: [build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-binaries
+          path: release/
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+          gh release create "$VERSION" release/* \
+            --title "$VERSION" \
+            --notes "Automated release. vhost-device-sound built with ALSA and PipeWire backends for nixling."
