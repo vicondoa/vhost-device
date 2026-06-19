@@ -58,10 +58,8 @@ jobs:
             --notes "Automated release. vhost-device-sound built with ALSA and PipeWire backends for nixling."
 
       - name: Install Nix (for hash computation)
-        uses: cachix/install-nix-action@v4
+        uses: DeterminateSystems/nix-installer-action@main
         with:
-          extra_nix_config: |
-            experimental-features = nix-command flakes
 
       - name: Compute SRI hashes and commit prebuilt manifest
         run: |
