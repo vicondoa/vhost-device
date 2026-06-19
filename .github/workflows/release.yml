@@ -24,7 +24,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y pkg-config libasound2-dev libpipewire-0.3-dev
       - name: Build vhost-device-sound (release)
-        run: cargo build --release --locked --package vhost-device-sound --no-default-features --features alsa-backend,pw-backend
+        run: cargo build --release --package vhost-device-sound --no-default-features --features alsa-backend,pw-backend
       - name: Package binary
         run: |
           VERSION="${GITHUB_REF_NAME}"
